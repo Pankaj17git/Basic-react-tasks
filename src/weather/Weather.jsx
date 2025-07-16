@@ -8,31 +8,16 @@ import {
   Grid,
   Chip,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions,
+  Button,
 } from "@mui/material";
 import axios from 'axios';
-import { data } from 'react-router';
 
 
-const mockData = {
-  location: "Mauli Baidwan, Punjab",
-  time: "Tuesday, 9:00 pm",
-  condition: "Mostly Cloudy",
-  temp: 29,
-  high: 32,
-  low: 27,
-  precipitation: 10,
-  humidity: 75,
-  wind: 16,
-  forecast: [
-    { day: "Tue", icon: "🌧️", high: 32, low: 27 },
-    { day: "Wed", icon: "🌧️", high: 31, low: 26 },
-    { day: "Thu", icon: "🌧️", high: 31, low: 27 },
-    { day: "Fri", icon: "🌧️", high: 31, low: 27 },
-    { day: "Sat", icon: "🌧️", high: 34, low: 28 },
-    { day: "Sun", icon: "⛅", high: 34, low: 27 },
-    { day: "Mon", icon: "🌧️", high: 30, low: 27 },
-  ],
-};
 
 /*{const hourlyData = [
   { time: "1 PM", temp: 32 },
@@ -51,23 +36,48 @@ const Weather = () => {
   const [place, setPlace] = useState('India')
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+
   const KEY = import.meta.env.VITE_WEATHER_API_Key;
 
-  useEffect(() => {
-    const fetchWeather = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(`http://api.weatherapi.com/v1/forecast.json?key=${KEY}&q=${place}&days=7`);
-        setWeather(response.data);
-        console.log(response.data);
 
-      } catch (err) {
-        setError('Error fetching weather data.', err)
-      }
-      setLoading(false);
-    };
-    fetchWeather();
-  }, [])
+  const fetchWeather = async (location) => {
+    setLoading(true);
+    setError('')
+    try {
+      const response = await axios.get(`http://api.weatherapi.com/v1/forecast.json?key=${KEY}&q=${location}&days=7`);
+      setWeather(response.data);
+      console.log(response.data);
+
+    } catch (err) {
+      setError('Error fetching weather data.', err)
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+
+    fetchWeather(place);
+  }, []);
+
+
+  const handleOpenDialog = () => {
+    setInputValue('');
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+  };
+
+  const handleSearch = () => {
+    if (inputValue.trim()) {
+      setPlace(inputValue.trim());
+      fetchWeather(inputValue.trim());
+      handleCloseDialog();
+    }
+  };
 
   return (
     <>
@@ -77,8 +87,36 @@ const Weather = () => {
           <Box sx={{ maxWidth: 800, mx: "auto", p: 2, }}>
             {/* Location */}
             <Typography variant="h6" gutterBottom>
-              Results for <strong>{weather.location.region}, {weather.location.country}</strong>
+              Results for <strong>{weather.location.name},{weather.location.region}. </strong>
+              <span onClick={handleOpenDialog} style={{
+                textAlign: 'top', color: 'Blue', fontSize: "0.75rem",
+                cursor: "pointer",
+                "&:hover": {
+                  textDecoration: "underline",
+                },
+              }}>Choose location</span>
+
             </Typography>
+
+            <Dialog open={dialogOpen} onClose={handleCloseDialog}>
+              <DialogTitle>Enter City or Country </DialogTitle>
+              <DialogContent>
+                <TextField
+                  autoFocus
+                  margin='dense'
+                  label='Location'
+                  type='text'
+                  fullWidth
+                  variant='outlined'
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleCloseDialog}>Cancle</Button>
+                <Button onClick={handleSearch} variant='contained'>Search</Button>
+              </DialogActions>
+            </Dialog>
 
             {/* Temperature */}
             <Card sx={{ mb: 2 }}>
@@ -103,7 +141,6 @@ const Weather = () => {
                 <Grid container spacing={2}>
                   <Grid item>
                     <Chip
-
                       label={`Precipitation: ${weather.forecast.forecastday[0].day.daily_chance_of_rain}%`}
                     />
                   </Grid>
@@ -160,24 +197,12 @@ const Weather = () => {
               </CardContent>
             </Card>
 
-            {/* Warning */}
-            <Card sx={{ backgroundColor: "#ffebee", borderLeft: "4px solid #d32f2f" }}>
-              <CardContent>
-                <Grid container spacing={1} alignItems="center">
-                  <Grid item>
-                    {/* <WarningIcon color="error" /> */}
-                  </Grid>
-                  <Grid item xs>
-                    <Typography variant="body1" color="error">
-                      Excessive heat
-                    </Typography>
-                    <Typography variant="body2">
-                      {mockData.location} — 2 hours ago
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+            {loading && <Typography>Loading...</Typography>}
+            {error && (
+              <Typography color="error" sx={{ mt: 2 }}>
+                {error}
+              </Typography>
+            )}
           </Box>
         )
       }
